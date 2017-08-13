@@ -46,11 +46,30 @@ export class IknowHeatmapComponent implements OnInit {
 
 
   private brush(){
+
+    let context = this;
     let brush = d3.brushX()
       .extent([[this.scaleWeek.range()[0], this.scaleDay.range()[0]], [this.scaleWeek.range()[1], this.scaleDay.range()[1]]])
       //.extent([[0, 0], [300, 300]])
-      .on("end",this.brushed);
+      .on("end",brushed);
     let slider = this.svg.append("g").attr("class", "brush").call(brush);
+
+  function brushed() {
+
+      if (!d3.event.sourceEvent) return; // Only transition after input.
+      if (!d3.event.selection) return; // Ignore empty selections.
+      let d0 = d3.event.selection.map(context.scaleWeek.invert);
+      let d1 = d0.map(Math.round);
+      console.log(d1);
+
+      // If empty when rounded, use floor & ceil instead.
+      if (d1[0] >= d1[1]) {
+        d1[0] = Math.floor(d0[0]);
+        //d1[1] = d3.timeDay.offset(d1[0]);
+      }
+
+      d3.select(this).transition().call(d3.event.target.move, d1.map(context.scaleWeek));
+    }
   }
 
   private loadData() {
@@ -114,7 +133,7 @@ export class IknowHeatmapComponent implements OnInit {
       .range([0,this.height]);
 
 
-    this.scaleWeek = d3.scaleTime()
+    this.scaleWeek = d3.scaleLinear()
       .domain([0,54])
       .range([0,this.width]);
 
@@ -140,20 +159,7 @@ export class IknowHeatmapComponent implements OnInit {
   }
 
 
-  private brushed() {
-    if (!d3.event.sourceEvent) return; // Only transition after input.
-    if (!d3.event.selection) return; // Ignore empty selections.
-    let d0 = d3.event.selection.map(this.scaleWeek.invert),
-      d1 = d0.map(d3.timeDay.round);
 
-    // If empty when rounded, use floor & ceil instead.
-    if (d1[0] >= d1[1]) {
-      d1[0] = d3.timeDay.floor(d0[0]);
-      d1[1] = d3.timeDay.offset(d1[0]);
-    }
-
-    d3.select('svg').transition().call(d3.event.target.move, d1.map(this.scaleWeek));
-  }
 
 
 
