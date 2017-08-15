@@ -2,6 +2,7 @@ export class Usage {
   label: string;
   dow: number;
   week: number;
+  hour: number;
   year: number;
   views:number;
   date: Date;

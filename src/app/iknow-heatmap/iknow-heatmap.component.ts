@@ -8,7 +8,10 @@ import * as d3Axis from 'd3-axis';
 import { STATISTICS,Usage } from '../shared/data';
 import {RGBColor} from "d3-color";
 import {DataService} from "../services/data.service";
+import {Heatmap} from "../shared/heatmap";
 import {Data} from "@angular/router";
+import {OverviewHeatmap} from "../shared/overviewHeatmap";
+import {DetailedHeatmap} from "../shared/detailedHeatmap";
 
 @Component({
   selector: 'app-iknow-heatmap',
@@ -19,60 +22,43 @@ export class IknowHeatmapComponent implements OnInit {
 
   private x: any;
   private y: any;
-  private svg: any;
   private g: any;
-  private scaleDay: any;
-  private scaleWeek: any;
-  private color: any;
-  private minweek: number;
+  private selectedYear = 2016;
+
+  private overviewMap: OverviewHeatmap;
+  private detailedMap: DetailedHeatmap;
+
+
 
 
   //private margin = { top: 20, right: 20, bottom: 110, left: 40 };
-  private margin = {top: 200, right: 40, bottom: 200, left: 40};
-  private width = 760 - this.margin.left - this.margin.right;
-  private height = 500 - this.margin.top - this.margin.bottom;
-
   private weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",""];
 
   private dataService:DataService;
 
   constructor(private _dataService:DataService) { this.dataService = _dataService;}
+
   ngOnInit() {
-    this.loadData();
-      //this.initSvg();
-      this.drawBars();
-      //this.blar();
+    this.render();
+  }
+
+  private render()
+  {
+    this.loadOverviewData(this.selectedYear);
   }
 
 
-  private brush(){
-
-    let context = this;
-    let brush = d3.brushX()
-      .extent([[this.scaleWeek.range()[0], this.scaleDay.range()[0]], [this.scaleWeek.range()[1], this.scaleDay.range()[1]]])
-      //.extent([[0, 0], [300, 300]])
-      .on("end",brushed);
-    let slider = this.svg.append("g").attr("class", "brush").call(brush);
-
-  function brushed() {
-
-      if (!d3.event.sourceEvent) return; // Only transition after input.
-      if (!d3.event.selection) return; // Ignore empty selections.
-      let d0 = d3.event.selection.map(context.scaleWeek.invert);
-      let d1 = d0.map(Math.round);
-      console.log(d1);
-
-      // If empty when rounded, use floor & ceil instead.
-      if (d1[0] >= d1[1]) {
-        d1[0] = Math.floor(d0[0]);
-        //d1[1] = d3.timeDay.offset(d1[0]);
-      }
-
-      d3.select(this).transition().call(d3.event.target.move, d1.map(context.scaleWeek));
-    }
+  private initOverviewSvg() {
+    const context = this;
+    let margin = {top: 200, right: 40, bottom: 200, left: 40};
+    this.overviewMap = new OverviewHeatmap('overview',500,760,margin,function (from:number,to:number) {
+      context.loadDetailedData(from,to,context.selectedYear);
+    });
+    //let margin = {top: 200, right: 40, bottom: 200, left: 40};
+    this.detailedMap = new DetailedHeatmap('detailed',500,760,margin);
   }
 
-  private loadData() {
+  private loadOverviewData(year:number) {
 
     const context = this;
 
@@ -81,10 +67,12 @@ export class IknowHeatmapComponent implements OnInit {
         throw error;
       }
 
-      for(let d of data)
+      let formattedData:Usage[] = [];
+
+      for(const d of data.filter(function(d){if(Number(d["ga:year"])===year)return d;}))
       {
-        let usage = new Usage();
-        let tempdate:string = d["ga:date"];
+        const usage = new Usage();
+        const tempdate:string = d["ga:date"];
         usage.dow = Number(d["ga:dayOfWeek"]);
         usage.year = Number(d["ga:year"]);
         usage.week = Number(d["ga:week"]);
@@ -92,71 +80,58 @@ export class IknowHeatmapComponent implements OnInit {
         usage.date = new Date(Number(tempdate.substr(0,4)),Number(tempdate.substr(4,2))-1,Number(tempdate.substr(6,2)));
         usage.label = (d["ga:date"]);
 
-        if(usage.year===2016)
-          STATISTICS.push(usage);
+        //if(usage.year===year)
+        formattedData.push(usage);
       }
 
 
-      context.minweek = d3.min(STATISTICS, function (d) { return d.week; });
 
-      context.initSvg();
-      context.drawHeat(STATISTICS);
-      context.brush();
+      context.initOverviewSvg();
+      context.overviewMap.draw(formattedData);
 
     });
   }
-  private drawHeat(data:Usage[]) {
-    console.log(data);
 
-
-    let context = this;
-
-    let gridSize = 10;
-
-    let rect = this.svg.selectAll("rect").data(data)
-      .enter().append("rect")
-      .attr("x",function(d){return context.scaleWeek(d.week);})
-      //.attr("y", function(d) { return (d.dow-1) * gridSize; })
-      .attr("y",function(d){return context.scaleDay(d.dow );})
-      .attr("width",10)
-      .attr("height",10)
-      .attr("rx", 1)
-      .attr("ry", 1)
-      .style("fill",function(d:Usage){return context.color(d.views);});
-  }
-  private initSvg() {
-
+  private loadDetailedData(startingWeek:number,endingWeek:number,year:number) {
     const context = this;
 
-    this.scaleDay = d3.scaleLinear()
-      .domain([0,7])
-      .range([0,this.height]);
+    d3.tsv("assets/data2.tsv", function(error, data) {
+      if (error) {
+        throw error;
+      }
+
+      let formattedData:Usage[] = [];
+
+      for(const d of data
+        .filter(function(d){
+          let week = Number(d["ga:week"]);
+          if(Number(d["ga:year"])===year && week<=endingWeek && week>=startingWeek)
+            return d;
+      }))
+      {
+        const usage = new Usage();
+        const tempdate:string = d["ga:date"];
+        usage.dow = Number(d["ga:dayOfWeek"]);
+        usage.year = Number(d["ga:year"]);
+        usage.week = Number(d["ga:week"]);
+        usage.views = Number(d["ga:pageviews"]);
+        usage.date = new Date(Number(tempdate.substr(0,4)),Number(tempdate.substr(4,2))-1,Number(tempdate.substr(6,2)));
+        usage.label = (d["ga:date"]);
+
+        //if(usage.year===year)
+        formattedData.push(usage);
+      }
+
+      console.log(formattedData);
+      context.detailedMap.draw(formattedData);
 
 
-    this.scaleWeek = d3.scaleLinear()
-      .domain([0,54])
-      .range([0,this.width]);
 
-    this.color = d3.scaleLinear<RGBColor>().domain(d3.extent(STATISTICS,function(d){return d.views;})).interpolate(d3.interpolateRgb)
-      .range([d3.rgb("#007AFF"), d3.rgb('#FFF500')]);
-
-    this.svg = d3.select('svg')
-      .attr("width", this.width + this.margin.left + this.margin.right)
-      .attr("height", this.height + this.margin.top + this.margin.bottom );
-
-
-    // Add the x-axis.
-    this.svg.append("g")
-      .attr("transform", "translate(0," + this.height + ")")
-      .call(d3.axisBottom(this.scaleWeek).ticks(53));
-
-    // Add the y-axis.
-    this.svg.append("g")
-      .call(d3.axisRight(this.scaleDay).ticks(7).tickFormat(function(d:number, i){
-        return context.weekdays[d];
-      }));
-
+    });
   }
+
+
+
 
 
 
@@ -164,10 +139,6 @@ export class IknowHeatmapComponent implements OnInit {
 
 
   private drawBars() {
-
-
-
-
 
     /*
 
@@ -230,6 +201,7 @@ export class IknowHeatmapComponent implements OnInit {
 
      });*/
   }
+/*
 
   private blar() {
     let margin = {top: 200, right: 40, bottom: 200, left: 40},
@@ -290,30 +262,6 @@ export class IknowHeatmapComponent implements OnInit {
       d3.select(this).transition().call(d3.event.target.move, d1.map(x));
     }
   }
+*/
 
-  private bler() {
-
-    let context = this;
-
-    this.dataService.getData().subscribe(data => {
-      console.log(data);
-      alert();
-    });
-
-    d3.json(
-      'https://www.googleapis.com/analytics/v3/data/ga?ids=ga%3A106789686&start-date=2015-04-15&end-date=yesterday&metrics=ga%3Apageviews&dimensions=ga%3AnthWeek%2Cga%3AdayOfWeek&access_token=ya29.Gl2MBIMxB-scnOvGeShWrfec2YtPj1QxugAN4l39xl_iQMXyqpouz2wW32VVRFnJRwCkweU7M_i8Qoq_UWDpAFJgZmd69nNZWzkReko6li2zTfxuxd74_ZgSgigpUnM'
-      , function(data) {
-        alert();
-
-        let freshData = data.rows.map(function(t){
-          /*let qwe:Usage = {label: "QQWE", views: Number(t[2]), day: Number(t[1]),week:Number(t[0]), date:new Date()};
-          return qwe;*/
-        });
-        console.log(freshData);
-
-        context.drawHeat(freshData);
-
-
-      });
-  }
 }
