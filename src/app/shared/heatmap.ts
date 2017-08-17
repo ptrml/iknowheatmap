@@ -11,7 +11,7 @@ export abstract class Heatmap {
   private _height:number;
   private _margin:any;
   private _svg:any;
-  protected gridSize = 10;
+  private _gridSize = 10;
   protected brushCallback=null;
 
 
@@ -23,7 +23,9 @@ export abstract class Heatmap {
     this.brushCallback = brushcallback || null;
     this.svg = d3.select('#'+id)
       .attr("width", this.width + this.margin.left + this.margin.right)
-      .attr("height", this.height + this.margin.top + this.margin.bottom );
+      .attr("height", this.height + this.margin.top + this.margin.bottom )
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     this.setup();
 
@@ -120,5 +122,15 @@ export abstract class Heatmap {
 
   set svg(value: any) {
     this._svg = value;
+  }
+
+
+  set gridSize(value: number) {
+    this._gridSize = value;
+  }
+
+
+  get gridSize(): number {
+    return this._gridSize;
   }
 }

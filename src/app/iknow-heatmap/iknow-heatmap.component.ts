@@ -5,13 +5,13 @@ import * as d3Scale from 'd3-scale';
 import * as d3Array from 'd3-array';
 import * as d3Axis from 'd3-axis';
 
-import { STATISTICS,Usage } from '../shared/data';
+import { Usage } from '../shared/data';
 import {RGBColor} from "d3-color";
 import {DataService} from "../services/data.service";
 import {Heatmap} from "../shared/heatmap";
 import {Data} from "@angular/router";
-import {OverviewHeatmap} from "../shared/overviewHeatmap";
-import {DetailedHeatmap} from "../shared/detailedHeatmap";
+import {HeatmapDayWeek} from "../shared/heatmapDayWeek";
+import {HeatmapHourDay} from "../shared/heatmapHourDay";
 
 @Component({
   selector: 'app-iknow-heatmap',
@@ -25,14 +25,13 @@ export class IknowHeatmapComponent implements OnInit {
   private g: any;
   private selectedYear = 2016;
 
-  private overviewMap: OverviewHeatmap;
-  private detailedMap: DetailedHeatmap;
+  private overviewMap: HeatmapDayWeek;
+  private detailedMap: HeatmapHourDay;
 
 
 
 
   //private margin = { top: 20, right: 20, bottom: 110, left: 40 };
-  private weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",""];
 
   private dataService:DataService;
 
@@ -50,12 +49,13 @@ export class IknowHeatmapComponent implements OnInit {
 
   private initOverviewSvg() {
     const context = this;
-    let margin = {top: 200, right: 40, bottom: 200, left: 40};
-    this.overviewMap = new OverviewHeatmap('overview',500,760,margin,function (from:number,to:number) {
+    let margin = {top: 40, right: 0, bottom: 0, left: 10};
+    this.overviewMap = new HeatmapDayWeek('overview',115,560,margin,function (from:number,to:number) {
       context.loadDetailedData(from,to,context.selectedYear);
     });
     //let margin = {top: 200, right: 40, bottom: 200, left: 40};
-    this.detailedMap = new DetailedHeatmap('detailed',500,760,margin);
+    this.detailedMap = new HeatmapHourDay('detailed',800,300,margin);
+    this.detailedMap.gridSize = 30;
   }
 
   private loadOverviewData(year:number) {
@@ -105,7 +105,7 @@ export class IknowHeatmapComponent implements OnInit {
       for(const d of data
         .filter(function(d){
           let week = Number(d["ga:week"]);
-          if(Number(d["ga:year"])===year && week<=endingWeek && week>=startingWeek)
+          if(Number(d["ga:year"])===year && week<endingWeek && week>=startingWeek)
             return d;
       }))
       {
@@ -114,6 +114,7 @@ export class IknowHeatmapComponent implements OnInit {
         usage.dow = Number(d["ga:dayOfWeek"]);
         usage.year = Number(d["ga:year"]);
         usage.week = Number(d["ga:week"]);
+        usage.hour = Number(d["ga:hour"]);
         usage.views = Number(d["ga:pageviews"]);
         usage.date = new Date(Number(tempdate.substr(0,4)),Number(tempdate.substr(4,2))-1,Number(tempdate.substr(6,2)));
         usage.label = (d["ga:date"]);

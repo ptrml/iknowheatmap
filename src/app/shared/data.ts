@@ -6,11 +6,22 @@ export class Usage {
   year: number;
   views:number;
   date: Date;
-
 }
 
-export let STATISTICS: Usage[] = [
-];
+export class Hourly {
+  dow: number;
+  views: number;
+  hour: number;
+
+
+  constructor(dow: number, hour: number,views: number) {
+    this.dow = dow;
+    this.hour = hour;
+    this.views = views;
+  }
+}
+
+
 
 /*
 *
