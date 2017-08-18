@@ -49,13 +49,14 @@ export class IknowHeatmapComponent implements OnInit {
 
   private initOverviewSvg() {
     const context = this;
-    let margin = {top: 40, right: 0, bottom: 0, left: 10};
-    this.overviewMap = new HeatmapDayWeek('overview',115,560,margin,function (from:number,to:number) {
+    let margin = {top: 40, right: 0, bottom: 0, left: 20};
+    this.overviewMap = new HeatmapDayWeek('overview',115,570,margin,function (from:number,to:number) {
       context.loadDetailedData(from,to,context.selectedYear);
     });
     //let margin = {top: 200, right: 40, bottom: 200, left: 40};
-    this.detailedMap = new HeatmapHourDay('detailed',800,300,margin);
-    this.detailedMap.gridSize = 30;
+    let margin2 = {top: 0, right: 0, bottom: 60, left: 30};
+    this.detailedMap = new HeatmapHourDay('detailed',320,920,margin2);
+    this.detailedMap.gridSize = 35;
   }
 
   private loadOverviewData(year:number) {
@@ -123,7 +124,6 @@ export class IknowHeatmapComponent implements OnInit {
         formattedData.push(usage);
       }
 
-      console.log(formattedData);
       context.detailedMap.draw(formattedData);
 
 

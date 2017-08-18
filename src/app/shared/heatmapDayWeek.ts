@@ -23,10 +23,15 @@ export class HeatmapDayWeek extends Heatmap
     this.scaleColor = d3.scaleLinear<RGBColor>()
       .domain(d3.extent(data,function(d){return d.views;}))
       .interpolate(d3.interpolateRgb)
-      .range([d3.rgb("#007AFF"), d3.rgb('#FFF500')]);
+      .range([d3.rgb(this.colors[0]), d3.rgb(this.colors[1])]);
 
-    const rect = this.svg.selectAll("rect").data(data)
-      .enter().append("rect")
+
+    const rect = this.svg.selectAll("rect").data(data);
+
+    rect.append("q");
+    rect.enter().append("rect")
+
+
       .attr("x",function(d){return context.scaleX(d.week+0.1);})
       .attr("y",function(d){return context.scaleY(d.dow );})
       .attr("width",this.gridSize)
@@ -34,6 +39,35 @@ export class HeatmapDayWeek extends Heatmap
       .attr("rx", 1)
       .attr("ry", 1)
       .style("fill",function(d:Usage){return context.scaleColor(d.views);});
+
+
+    rect.transition().duration(500)
+      .style("fill", function(d) { return context.scaleColor(d.views); });
+
+
+    rect.exit().remove();
+
+
+    /*const legend = this.svg.selectAll(".legend")
+      .data([0].concat(this.scaleColor.quantiles()), function(d) { return d; });
+
+    legend.enter().append("g")
+      .attr("class", "legend");
+
+    legend.append("rect")
+      .attr("x", function(d, i) { return 40 * i; })
+      .attr("y", 20)
+      .attr("width", 40)
+      .attr("height", 20 / 2)
+      .style("fill", function(d, i) { return context.colors[i]; });
+
+    legend.append("text")
+      .attr("class", "mono")
+      .text(function(d) { return "≥ " + Math.round(d); })
+      .attr("x", function(d, i) { return 40 * i; })
+      .attr("y", 20 + 20);
+
+    legend.exit().remove();*/
 
 
     if(this.brushCallback!=null)
@@ -52,7 +86,6 @@ export class HeatmapDayWeek extends Heatmap
       times.push("Week "+i);
     }
 
-    console.log(times);
 
     this.scaleY = d3.scaleLinear()
       .domain([0,7])

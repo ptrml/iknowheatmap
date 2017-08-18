@@ -14,6 +14,8 @@ export abstract class Heatmap {
   private _gridSize = 10;
   protected brushCallback=null;
 
+  protected colors = ["#007AFF",'#FFF500'];
+
 
   constructor(id: string,height: number, width: number, margin: any,brushcallback?:any) {
 
@@ -21,6 +23,7 @@ export abstract class Heatmap {
     this.width = width - this.margin.left - this.margin.right;
     this.height = height - this.margin.top - this.margin.bottom;
     this.brushCallback = brushcallback || null;
+
     this.svg = d3.select('#'+id)
       .attr("width", this.width + this.margin.left + this.margin.right)
       .attr("height", this.height + this.margin.top + this.margin.bottom )
@@ -54,7 +57,6 @@ export abstract class Heatmap {
       if (!d3.event.selection) return; // Ignore empty selections.
       const d0 = d3.event.selection.map(context.scaleX.invert);
       const d1 = d0.map(Math.round);
-      console.log(d1);
 
       // If empty when rounded, use floor & ceil instead.
       if (d1[0] >= d1[1]) {
@@ -64,7 +66,7 @@ export abstract class Heatmap {
 
       d3.select(this).transition().call(d3.event.target.move, d1.map(context.scaleX));
 
-      context.brushCallback(d1[0],d1[1]);
+      context.brushCallback(d1[0],d1[1],context.scaleColor);
     }
   }
 
