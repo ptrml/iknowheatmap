@@ -21,12 +21,18 @@ export class HeatmapDayWeek extends Heatmap
 
 
     this.scaleColor = d3.scaleLinear<RGBColor>()
-      .domain(d3.extent(data,function(d){return d.views;}))
+      //.domain(d3.extent(data,function(d){return d.views;}))
+      .domain([0,30000])
       .interpolate(d3.interpolateRgb)
       .range([d3.rgb(this.colors[0]), d3.rgb(this.colors[1])]);
 
 
     const rect = this.svg.selectAll("rect").data(data);
+
+
+
+    const tooltip = d3.select('body').append('div')
+      .attr('id', 'tooltip');
 
     rect.append("q");
     rect.enter().append("rect")
@@ -38,7 +44,15 @@ export class HeatmapDayWeek extends Heatmap
       .attr("height",this.gridSize)
       .attr("rx", 1)
       .attr("ry", 1)
-      .style("fill",function(d:Usage){return context.scaleColor(d.views);});
+      .style("fill",function(d:Usage){return context.scaleColor(d.views);})
+      .on('mouseover', (d) => {
+        tooltip.transition()
+          .duration(100)
+          .style('opacity', .9);
+        tooltip.text(`qwe`)
+          .style('left', `${d3.event.pageX - 55}px`)
+          .style('top', `${d3.event.pageY - 40}px`);
+      });
 
 
     rect.transition().duration(500)
@@ -86,13 +100,12 @@ export class HeatmapDayWeek extends Heatmap
       times.push("Week "+i);
     }
 
-
     this.scaleY = d3.scaleLinear()
       .domain([0,7])
       .range([0,this.height]);
 
     this.scaleX = d3.scaleLinear()
-      .domain([0,53])
+      .domain([1,54])
       .range([0,this.width]);
 
 
@@ -114,20 +127,30 @@ export class HeatmapDayWeek extends Heatmap
       .enter().append("text")
       .text(function (d) { return d; })
       .attr("x", 0)
-      .attr("y", (d, i) => i * context.gridSize*1.45)
+      .attr("y", (d, i) => i * context.gridSize*1.1)
       .style("text-anchor", "end")
-      .attr("transform", "translate(+6," + context.gridSize / 1.2 + ")")
-      .attr("class", (d, i) => ((i >= 0 && i <= 4) ? "dayLabel mono axis axis-workweek" : "dayLabel mono axis"));
+      .attr("transform", "translate(-3," + context.gridSize / 1.2 + ") ")
+      .attr("font-size", "0.7em")
+      .attr("class", "dayLabel mono axis axis-workweek");
+
+
+
 
     const timeLabels = this.svg.selectAll(".timeLabel")
       .data(times)
-      .enter().append("text")
-      .text((d) => d)
-      .attr("x", (d, i) => i * this.gridSize)
+      .enter().append("g")
+      //.text((d) => d)
+      //.attr("x", (d, i) => i * this.gridSize)
       .attr("y", 0)
+      //.style("text-anchor", "middle")
+      .attr("transform", (d, i) => "translate(" + (1.5*this.gridSize + i * 1.045 * this.gridSize) + ", -"+2*this.gridSize+")")
+      //.attr("class", "timeLabel mono axis axis-worktime")
+      .append("text")
+      .text((d) => d)
       .style("text-anchor", "middle")
-      .attr("transform", "translate(" + this.gridSize + ", -6)")
-      .attr("class", (d, i) => ((i >= 7 && i <= 16) ? "timeLabel mono axis axis-worktime" : "timeLabel mono axis"));
+      .attr("transform", "rotate(-65)")
+      .attr("font-size", "0.7em")
+      .attr("class", "timeLabel mono axis axis-worktime");
   }
 
 

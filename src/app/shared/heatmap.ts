@@ -13,6 +13,8 @@ export abstract class Heatmap {
   private _svg:any;
   private _gridSize = 10;
   protected brushCallback=null;
+  private _tooltip = null;
+
 
   protected colors = ["#007AFF",'#FFF500'];
 
@@ -66,7 +68,7 @@ export abstract class Heatmap {
 
       d3.select(this).transition().call(d3.event.target.move, d1.map(context.scaleX));
 
-      context.brushCallback(d1[0],d1[1],context.scaleColor);
+      context.brushCallback(d1[0],d1[1]);
     }
   }
 
@@ -134,5 +136,14 @@ export abstract class Heatmap {
 
   get gridSize(): number {
     return this._gridSize;
+  }
+
+
+  get tooltip(): any {
+    return this._tooltip;
+  }
+
+  set tooltip(value: any) {
+    this._tooltip = value;
   }
 }

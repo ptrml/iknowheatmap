@@ -12,12 +12,16 @@ export class Hourly {
   dow: number;
   views: number;
   hour: number;
+  startDate: Date;
+  endDate: Date;
 
 
-  constructor(dow: number, hour: number,views: number) {
+  constructor(dow: number, hour: number,views: number, startDate: Date, endDate: Date) {
     this.dow = dow;
-    this.hour = hour;
     this.views = views;
+    this.hour = hour;
+    this.startDate = startDate;
+    this.endDate = endDate;
   }
 }
 

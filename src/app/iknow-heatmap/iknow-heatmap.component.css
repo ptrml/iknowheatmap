@@ -1,5 +1,6 @@
 body {
   font: 10px sans-serif;
+  color: red;
 }
 
 .axis path,
@@ -13,3 +14,4 @@ body {
   fill: steelblue;
   stroke: #000;
 }
+
