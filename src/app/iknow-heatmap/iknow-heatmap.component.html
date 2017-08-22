@@ -1,2 +1,25 @@
-<svg  id="overview"></svg><br>
-<svg  id="detailed"></svg>
+<svg id="overview" style="float: left"></svg>
+
+  <div style="display: inline-block; position: relative;width:310px;height:70px;">
+
+    <select class="form-control" style="float:right" (change)="selectYear($event.target.value)">
+      <option value="">Select year</option>
+      <option *ngFor="let year of years"
+              [value]="year">
+        {{year}}
+      </option>
+    </select>
+
+
+    <b>Week: {{details.printRange()}}</b>
+    <div>Day avg: {{details.averagePerDay}}</div>
+    <div>Total: {{details.totalViews}}</div>
+    <br>
+    <div *ngIf="details.text!=null&&details.text!=''" style="padding:10px;background-color: #E1ECF2;display: inline-block;color: #556;border:solid;border-width:1px;border-color: #15A8F2;box-shadow: 5px 5px 5px rgba(110, 110, 110, 0.2);opacity: 0.9">
+      <b >{{details.text}}</b>
+    </div>
+
+  </div>
+<br>
+<svg  id="detailed" style="float: left; clear:both !important;"></svg>
+<svg  id="chart" style="float: left; clear:both !important;"></svg>

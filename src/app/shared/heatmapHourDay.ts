@@ -2,6 +2,7 @@ import {Heatmap} from "./heatmap";
 import {Hourly, Usage} from "./data";
 import {RGBColor} from "d3-color";
 import * as d3 from 'd3';
+import {Util} from "./Util";
 
 
 export class HeatmapHourDay extends Heatmap
@@ -24,7 +25,9 @@ export class HeatmapHourDay extends Heatmap
         return new Hourly(Number(t.key.split("__")[0]),Number(t.key.split("__")[1]),t.value.views,t.value.startDate,t.value.endDate);
       });
 
-    let weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+    context.observer.totalViews = d3.sum(hourly,function(d){return d.views;});
+    context.observer.averagePerDay = d3.mean(data,function(d){return d.views;});
 
     let summo = d3.nest<Hourly,any>()
       .key(function(t:Hourly){return t.dow.toString();})
@@ -34,13 +37,11 @@ export class HeatmapHourDay extends Heatmap
       .data(summo);
     sums
       .enter().append("text")
-      .attr("x", this.width)
+      .attr("x", this.width+this.gridSize*0.8)
       .attr("y", (d, i) => i * context.gridSize*1.05 + context.gridSize*0.7 )
       .style("text-anchor", "start")
       .attr("class","averages")
       .text(function (d) { return Math.round(d.value)+" views"; });
-
-
     sums
       .text(function (d) { return Math.round(d.value)+" views"; });
 
@@ -50,38 +51,29 @@ export class HeatmapHourDay extends Heatmap
       .interpolate(d3.interpolateRgb)
       .range([d3.rgb(this.colors[0]), d3.rgb(this.colors[1])]);
 
+    this.svg.selectAll("rect").remove();
     const rect = this.svg.selectAll("rect").data(hourly);
-
-
-
     rect.append("q");
-
     rect.enter().append("rect")
-
       .attr("x",function(d){return context.scaleY(d.hour );})
-      .attr("y",function(d){console.log(context.scaleX); return context.scaleX(d.dow);})
+      .attr("y",function(d){return context.scaleX(d.dow);})
       .attr("width",this.gridSize)
       .attr("height",this.gridSize)
       .attr("rx", 4)
       .attr("ry", 4)
       .style("fill",function(d:Usage){return context.scaleColor(d.views);})
       .on('mouseover', (d) => {
-        context.tooltip.transition()
-          .duration(100)
-          .style('opacity', .9);
-        context.tooltip.text(`${d.hour}h  ${d.startDate.toString('dddd, MMMM ,yyyy')} - ${d.endDate.toString('dddd, MMMM ,yyyy')} : ${d.views}`)
-          .style('left', `${d3.event.pageX - 55}px`)
-          .style('top', `${d3.event.pageY - 40}px`);
+        context.observer.text = `${d.hour}h  ${d.startDate.toDateString()} - ${d.endDate.toDateString()} :  ${Util.round(d.views)} avg. views`;
       })
       .on('mouseout', () => {
-        context.tooltip.transition()
-          .duration(400)
-          .style('opacity', 0);
+        context.observer.text = "";
       });
 
     rect.transition().duration(500)
       .style("fill", function(d) { return context.scaleColor(d.views); });
 
+
+    rect.select("title").text((d) => d.views);
 
     rect.exit().remove();
 
@@ -112,29 +104,14 @@ export class HeatmapHourDay extends Heatmap
       .attr('id', 'tooltip');
 
 
-/*
-    // Add the x-axis.
-    this.svg.append("g")
-      //.attr("transform", "translate(0," + this.height + ")")
-      .call(d3.axisLeft(this.scaleY).ticks(7));
-
-    // Add the y-axis.
-    this.svg.append("g")
-      //.attr("transform", "translate(0,0)")
-      .call(d3.axisBottom(this.scaleX).ticks(24).tickFormat(function(d:number, i){
-        //return context.weekdays[d];
-        return "'";
-      }));*/
-
     const dayLabels = this.svg.selectAll(".dayLabel")
       .data(weekdays)
       .enter().append("text")
       .attr("x", 0)
-      .attr("y", (d, i) => i * context.gridSize*3.7)
+      .attr("y", (d, i) => i * context.gridSize*1.06)
       .style("text-anchor", "end")
-      .attr("transform", "translate(-5," + context.gridSize*2.1 + ") ")
-      //.attr("transform", "rotate(90deg)")
-      .attr("class", (d, i) => ((i >= 0 && i <= 4) ? "dayLabel mono axis axis-workweek" : "dayLabel mono axis"))
+      .attr("transform", "translate(-5," + context.gridSize*0.6 + ") ")
+      .attr("class", "dayLabel mono axis")
       //.selectAll("text")
       .text(function (d) { return d; });
 
@@ -146,11 +123,55 @@ export class HeatmapHourDay extends Heatmap
       .data(times)
       .enter().append("text")
       .text((d) => d)
-      .attr("x", (d, i) => i * context.gridSize*3.72)
+      .attr("x", (d, i) => i * context.gridSize*1.06)
       .attr("y", 0)
       .style("text-anchor", "middle")
-      .attr("transform", "translate(" + context.margin.left/1.8 + ", "+(Number(context.height)+context.gridSize*1.5)+")")
-      .attr("class", (d, i) => ((i >= 7 && i <= 16) ? "timeLabel mono axis axis-worktime" : "timeLabel mono axis"));
+      .attr("transform", "translate(" + context.margin.left/1.8 + ", "+(Number(context.height)+context.gridSize*0.5)+")")
+      .attr("class", "timeLabel mono axis");
+
+
+
+    let dummyData:Hourly[] = [];
+    for(let i = 0; i<24;i++)
+    {
+      for(let j = 0; j<7;j++)
+      {
+        let tempy = new Hourly(j,i,0,null,null);
+        dummyData.push(tempy);
+      }
+    }
+
+    const rect = this.svg.selectAll("rect").data(dummyData);
+
+
+
+    rect.append("q");
+
+    rect.enter().append("rect")
+
+      .attr("x",function(d){return context.scaleY(d.hour );})
+      .attr("y",function(d){return context.scaleX(d.dow);})
+      .attr("width",this.gridSize)
+      .attr("height",this.gridSize)
+      .attr("rx", 4)
+      .attr("ry", 4)
+      .style("fill",function(d:Usage){return "#CCC";});
+
+
+
+    this.svg.append("g")
+      .attr("transform", "translate(" +this.width+ ","+this.height/2+")")
+      .attr("class", "axis")
+      .append("text")
+      .attr("transform","rotate(-90)")
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Average views per day");
+
 
   }
+
+
+
+
 }

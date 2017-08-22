@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { FormGroup, FormControl,ReactiveFormsModule  } from '@angular/forms';
 
 import * as d3 from 'd3';
 import * as d3Scale from 'd3-scale';
@@ -12,6 +13,9 @@ import {Heatmap} from "../shared/heatmap";
 import {Data} from "@angular/router";
 import {HeatmapDayWeek} from "../shared/heatmapDayWeek";
 import {HeatmapHourDay} from "../shared/heatmapHourDay";
+import {DetailView} from "../shared/DetailView";
+import {Util} from "../shared/Util"
+import {GraphHourDay} from "../shared/graphHourDay";
 
 @Component({
   selector: 'app-iknow-heatmap',
@@ -20,13 +24,14 @@ import {HeatmapHourDay} from "../shared/heatmapHourDay";
 })
 export class IknowHeatmapComponent implements OnInit {
 
-  private x: any;
-  private y: any;
-  private g: any;
-  private selectedYear = 2016;
+  private selectedYear = 2015;
 
   private overviewMap: HeatmapDayWeek;
   private detailedMap: HeatmapHourDay;
+  private detailedChart: GraphHourDay;
+  private _details: DetailView;
+
+  years: number[] = [2015,2016,2017];
 
 
 
@@ -38,25 +43,39 @@ export class IknowHeatmapComponent implements OnInit {
   constructor(private _dataService:DataService) { this.dataService = _dataService;}
 
   ngOnInit() {
+    this.details = new DetailView;
     this.render();
+
   }
 
   private render()
   {
+    this.initGraphs();
+  }
+
+  selectYear(event:number) {
+    this.selectedYear = Number(event);
     this.loadOverviewData(this.selectedYear);
   }
 
-
-  private initOverviewSvg() {
+  private initGraphs() {
     const context = this;
-    let margin = {top: 40, right: 30, bottom: 10, left: 20};
-    this.overviewMap = new HeatmapDayWeek('overview',125,600,margin,function (from:number,to:number) {
+    let margin = {top: 40, right: 30, bottom: 10, left: 30};
+    this.overviewMap = new HeatmapDayWeek('overview',125,610,margin,function (from:number,to:number) {
       context.loadDetailedData(from,to,context.selectedYear);
     });
     //let margin = {top: 200, right: 40, bottom: 200, left: 40};
-    let margin2 = {top: 0, right: 80, bottom: 60, left: 30};
-    this.detailedMap = new HeatmapHourDay('detailed',320,1000,margin2);
-    this.detailedMap.gridSize = 35;
+    let margin2 = {top: 0, right: 108, bottom: 60, left: 30};
+    this.detailedMap = new HeatmapHourDay('detailed',320,1028,margin2,null,35);
+
+
+    //let margin2 = {top: 0, right: 80, bottom: 60, left: 30};
+    this.detailedChart = new GraphHourDay('chart',320,1000,margin2,null,35);
+
+    this.overviewMap.observer = this.details;
+    this.detailedMap.observer = this.details;
+    this.detailedChart.observer = this.details;
+
   }
 
   private loadOverviewData(year:number) {
@@ -87,7 +106,6 @@ export class IknowHeatmapComponent implements OnInit {
 
 
 
-      context.initOverviewSvg();
       context.overviewMap.draw(formattedData);
 
     });
@@ -125,6 +143,7 @@ export class IknowHeatmapComponent implements OnInit {
       }
 
       context.detailedMap.draw(formattedData);
+      context.detailedChart.draw(formattedData);
 
 
 
@@ -265,4 +284,12 @@ export class IknowHeatmapComponent implements OnInit {
   }
 */
 
+
+  get details(): DetailView {
+    return this._details;
+  }
+
+  set details(value: DetailView) {
+    this._details = value;
+  }
 }

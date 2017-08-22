@@ -18,6 +18,7 @@ export class HeatmapDayWeek extends Heatmap
 
   public draw(data: Usage[]): void {
     const context = this;
+    const fillLine2 = "#FF0F80";
 
 
     this.scaleColor = d3.scaleLinear<RGBColor>()
@@ -27,14 +28,21 @@ export class HeatmapDayWeek extends Heatmap
       .range([d3.rgb(this.colors[0]), d3.rgb(this.colors[1])]);
 
 
-    const rect = this.svg.selectAll("rect").data(data);
+    let chart = this.svg.append("g")
+      .attr("class","chart");
 
 
 
-    const tooltip = d3.select('body').append('div')
-      .attr('id', 'tooltip');
+    this.svg.selectAll("rect").remove();
+    const rect = chart.selectAll("rect").data(data);
 
-    rect.append("q");
+    rect.transition().duration(500)
+      .style("fill", function(d) { return context.scaleColor(d.views); });
+
+
+
+
+    //rect.append("q");
     rect.enter().append("rect")
 
 
@@ -44,48 +52,47 @@ export class HeatmapDayWeek extends Heatmap
       .attr("height",this.gridSize)
       .attr("rx", 1)
       .attr("ry", 1)
+      .attr("class", "node")
       .style("fill",function(d:Usage){return context.scaleColor(d.views);})
-      .on('mouseover', (d) => {
-        tooltip.transition()
-          .duration(100)
-          .style('opacity', .9);
-        tooltip.text(`qwe`)
-          .style('left', `${d3.event.pageX - 55}px`)
-          .style('top', `${d3.event.pageY - 40}px`);
-      });
-
-
-    rect.transition().duration(500)
-      .style("fill", function(d) { return context.scaleColor(d.views); });
 
 
     rect.exit().remove();
 
 
-    /*const legend = this.svg.selectAll(".legend")
-      .data([0].concat(this.scaleColor.quantiles()), function(d) { return d; });
-
-    legend.enter().append("g")
-      .attr("class", "legend");
-
-    legend.append("rect")
-      .attr("x", function(d, i) { return 40 * i; })
-      .attr("y", 20)
-      .attr("width", 40)
-      .attr("height", 20 / 2)
-      .style("fill", function(d, i) { return context.colors[i]; });
-
-    legend.append("text")
-      .attr("class", "mono")
-      .text(function(d) { return "≥ " + Math.round(d); })
-      .attr("x", function(d, i) { return 40 * i; })
-      .attr("y", 20 + 20);
-
-    legend.exit().remove();*/
-
-
     if(this.brushCallback!=null)
       this.setupBrush();
+
+
+    const border = this.svg.append("rect");
+    border
+      .attr("x",0)
+      .attr("y",0)
+      .attr("height",this.height)
+      .attr("width",this.width)
+      .attr("class","bordero")
+      .style("stroke",fillLine2)
+      .style("fill","none")
+      .attr("stroke-width", 4)
+      .style("opacity",0);
+
+    border.transition().duration(600)
+      .style("opacity",1)
+      .transition().duration(600)
+      .style("opacity",0.2)
+    .transition().duration(600)
+      .style("opacity",1)
+    .transition().duration(600)
+      .style("opacity",0.2)
+      .transition().duration(600)
+      .style("opacity",1)
+      .transition().duration(750)
+      .style("opacity",0.2)
+      .transition().duration(1000)
+      .style("opacity",1);
+
+
+
+
   }
 
   protected setup(): void {
@@ -94,11 +101,23 @@ export class HeatmapDayWeek extends Heatmap
     let times = [];
     let weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-
+    let dummyData:Usage[] = [];
     for(let i = 1; i<54;i++)
     {
       times.push("Week "+i);
+
+      for(let j = 0; j<7;j++)
+      {
+        let tempy = new Usage();
+        tempy.dow=j;
+        tempy.week=i;
+        dummyData.push(tempy);
+      }
     }
+
+
+
+
 
     this.scaleY = d3.scaleLinear()
       .domain([0,7])
@@ -110,17 +129,7 @@ export class HeatmapDayWeek extends Heatmap
 
 
 
-    // Add the x-axis.
-    /*this.svg.append("g")
-      .attr("transform", "translate(0," + this.height + ")")
-      .call(d3.axisBottom(this.scaleX).ticks(53));*/
 
-    /*// Add the y-axis.
-    this.svg.append("g")
-      .call(d3.axisRight(this.scaleY).ticks(7).tickFormat(function(d:number, i){
-        return HeatmapDayWeek.weekdays[d];
-        //return'1';
-      }));*/
 
     const dayLabels = this.svg.selectAll(".dayLabel")
       .data(weekdays)
@@ -151,6 +160,30 @@ export class HeatmapDayWeek extends Heatmap
       .attr("transform", "rotate(-65)")
       .attr("font-size", "0.7em")
       .attr("class", "timeLabel mono axis axis-worktime");
+
+
+
+
+    this.svg.selectAll("rect").remove();
+    const rect = this.svg.selectAll("rect").data(dummyData);
+
+    //rect.append("q");
+    rect.enter().append("rect")
+
+
+      .attr("x",function(d){return context.scaleX(d.week+0.1);})
+      .attr("y",function(d){return context.scaleY(d.dow );})
+      .attr("width",this.gridSize)
+      .attr("height",this.gridSize)
+      .attr("rx", 1)
+      .attr("ry", 1)
+      .style("fill",function(d:Usage){return "#AAAAAA";});
+
+
+
+
+
+
   }
 
 

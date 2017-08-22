@@ -2,6 +2,7 @@ import * as d3 from 'd3';
 import { Usage } from '../shared/data';
 import {RGBColor} from "d3-color";
 import {isUndefined} from "util";
+import {DetailView} from "./DetailView";
 
 export abstract class Heatmap {
   private _scaleX:any;
@@ -14,17 +15,19 @@ export abstract class Heatmap {
   private _gridSize = 10;
   protected brushCallback=null;
   private _tooltip = null;
+  private _observer: DetailView;
 
 
-  protected colors = ["#007AFF",'#FFF500'];
+  protected colors = ["#FFF4F9",'#008DD5','#FE5F55'];
 
 
-  constructor(id: string,height: number, width: number, margin: any,brushcallback?:any) {
+  constructor(id: string,height: number, width: number, margin: any,brushcallback?:any,gridsize?:number) {
 
     this.margin = margin;
     this.width = width - this.margin.left - this.margin.right;
     this.height = height - this.margin.top - this.margin.bottom;
     this.brushCallback = brushcallback || null;
+    this.gridSize = gridsize || 10;
 
     this.svg = d3.select('#'+id)
       .attr("width", this.width + this.margin.left + this.margin.right)
@@ -34,7 +37,6 @@ export abstract class Heatmap {
 
     this.setup();
 
-    console.log(id);
 
   }
 
@@ -50,7 +52,28 @@ export abstract class Heatmap {
       .extent([[this.scaleX.range()[0], this.scaleY.range()[0]], [this.scaleX.range()[1], this.scaleY.range()[1]]])
       //.extent([[0, 0], [300, 300]])
       .on("end",brushed);
+
+    this.svg.select(".brush").remove();
     const slider = this.svg.append("g").attr("class", "brush").call(brush);
+
+    this.svg.select(".overlay")
+      .on('mouseover', (d) => {
+      context.observer.text = `Click and pull to select area`;
+      context.svg.select(".bordero").transition();
+        context.svg.select(".bordero").transition().duration(500)
+          .style("opacity",0);
+    })
+      .on('mouseout', () => {
+        context.observer.text = "";
+      });
+
+    this.svg.select(".selection")
+      .on('mouseover', (d) => {
+        context.observer.text = `Click and pull to move selected area`;
+      })
+      .on('mouseout', () => {
+        context.observer.text = "";
+      });
 
     function brushed()
     {
@@ -67,6 +90,9 @@ export abstract class Heatmap {
       }
 
       d3.select(this).transition().call(d3.event.target.move, d1.map(context.scaleX));
+
+      context.observer.rangeFrom = d1[0];
+      context.observer.rangeTo = d1[1]-1;
 
       context.brushCallback(d1[0],d1[1]);
     }
@@ -145,5 +171,14 @@ export abstract class Heatmap {
 
   set tooltip(value: any) {
     this._tooltip = value;
+  }
+
+
+  get observer(): DetailView {
+    return this._observer;
+  }
+
+  set observer(value: DetailView) {
+    this._observer = value;
   }
 }
